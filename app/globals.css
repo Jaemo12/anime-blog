@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #a5b4fc;
+  --secondary: #c4b5fd;
+  --accent: #f0abfc;
+  --muted: #e5e7eb;
 }
 
 @theme inline {
@@ -16,6 +20,10 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --primary: #818cf8;
+    --secondary: #a78bfa;
+    --accent: #d8b4fe;
+    --muted: #374151;
   }
 }
 
@@ -24,3 +32,162 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 15s ease infinite;
+  background-size: 200% 200%;
+}
+.text-glow {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.4);
+}
+
+.bg-grid-pattern {
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+.bg-overlay {
+  background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
+}
+.text-shadow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.bg-grid-lines {
+  background-size: 100px 100px;
+  background-image:
+    linear-gradient(to right, rgba(165, 180, 252, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(165, 180, 252, 0.1) 1px, transparent 1px);
+}
+
+/* 
+Here are some additional CSS customizations that you should add to your global stylesheet 
+to enhance the cinematic look of your blog listing page:
+*/
+
+/* Add these styles to your global CSS file */
+
+/* Cinematic text shadow for headings */
+.cinematic-text {
+  text-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+}
+
+/* Enhanced card hover effects */
+.card-hover-effect {
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-12px) scale(1.02);
+  box-shadow: 0 30px 60px -12px rgba(79, 70, 229, 0.4);
+}
+
+/* Cinematic button styles */
+.btn-cinematic {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.btn-cinematic::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transition: all 0.7s ease;
+}
+
+.btn-cinematic:hover::before {
+  left: 100%;
+}
+
+/* Enhanced image hover effect */
+.image-cinematic {
+  transition: transform 1.5s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+.image-cinematic:hover {
+  transform: scale(1.12);
+}
+
+/* Category badge glow effect */
+.category-badge {
+  position: relative;
+}
+
+.category-badge::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background: inherit;
+  filter: blur(8px);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.4s ease;
+}
+
+.category-badge:hover::after {
+  opacity: 0.7;
+}
+
+/* Page transition effects */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* Cinematic scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #6366f1, #a855f7, #ec4899);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #4f46e5, #9333ea, #db2777);
+}
+
+/* Cinematic neon text effect */
+.neon-text {
+  text-shadow: 
+    0 0 5px rgba(99, 102, 241, 0.8),
+    0 0 10px rgba(99, 102, 241, 0.5),
+    0 0 15px rgba(99, 102, 241, 0.3);
+}
+
