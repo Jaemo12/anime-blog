@@ -2,240 +2,602 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { useInView } from 'react-intersection-observer';
 import Image from 'next/image';
 
-export default function CinematicAnimeLanding() {
+export default function AnimeLanding() {
   const router = useRouter();
   const [currentSection, setCurrentSection] = useState(0);
   const [introStage, setIntroStage] = useState(1);
   const [showIntroAnimation, setShowIntroAnimation] = useState(true);
-  const containerRef = useRef(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const mainRef = useRef(null);
   
-  // This is the simplest version using your original images
+  // Handle client-side initialization
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  // Enhanced sections with more sophisticated content
   const sections = [
     {
       id: 'hero',
       title: 'ANIMEVERSE',
       background: '/images/akira.jpg',
       subtitle: 'Your Gateway to Animation Excellence',
-      description: 'A place to know all about the current animes'
+      description: 'Dive into a world where imagination knows no bounds. Create, share, and explore anime stories that resonate with fans worldwide.',
+      featuredText: 'DISCOVER · WRITE · CONNECT',
+      stats: [
+        { value: '10K+', label: 'Stories', icon: '📚' },
+        { value: '50K+', label: 'Writers', icon: '✍️' },
+        { value: '2M+', label: 'Readers', icon: '👥' }
+      ]
     },
     {
       id: 'discover',
       title: 'DISCOVER',
       background: '/images/gojo.jpg',
       subtitle: 'Personalized Recommendations',
-      description: 'Find your next favorite series with our AI-powered suggestions'
+      description: 'Our AI-powered system learns your preferences to suggest stories you will love, from classic shōnen to cutting-edge isekai.',
+      features: [
+        { icon: '✨', text: 'Curated collections by genre' },
+        { icon: '📈', text: 'Weekly trending stories' },
+        { icon: '📚', text: 'Personalized reading lists' }
+      ]
     },
     {
-      id: 'experience',
-      title: 'EXPERIENCE',
+      id: 'create',
+      title: 'CREATE',
       background: '/images/bgmountain.jpg',
-      subtitle: 'Immersive Viewing',
-      description: 'Theater-quality streaming for the ultimate anime experience'
+      subtitle: 'Premium Writing Experience',
+      description: 'Craft your narratives with our state-of-the-art editor, featuring real-time collaboration, AI assistance, and rich media support.',
+      tools: [
+        { name: 'Character Builder', description: 'Create complex characters with detailed profiles' },
+        { name: 'Plot Navigator', description: 'Structure your story with our intuitive outlining tool' },
+        { name: 'Style Enhancer', description: 'Refine your writing with AI-powered suggestions' }
+      ]
     },
     {
       id: 'connect',
       title: 'CONNECT',
       background: '/images/yourname.jpg',
       subtitle: 'Join The Community',
-      description: 'Share your passion with fellow enthusiasts around the world'
+      description: 'Share your passion with fellow enthusiasts in a vibrant ecosystem of creators and fans from across the globe.',
+      testimonials: [
+        { quote: "AnimeVerse completely transformed how I share my stories with other fans.", author: "Sakura, Fantasy Writer" },
+        { quote: "The community feedback helped me grow from amateur to published author.", author: "Takeshi, Sci-Fi Creator" }
+      ]
     }
   ];
 
-  // Handle intro animation timing
+  // Handle intro animation with more sophisticated timing
   useEffect(() => {
-    // Skip the loading check - go straight to animation
-    const introStage1Timer = setTimeout(() => {
-      setIntroStage(2);
-    }, 1500);
+    if (!isMounted || !showIntroAnimation) return;
     
-    const introStage2Timer = setTimeout(() => {
-      setIntroStage(3);
-    }, 3000);
+    const introSequence = [
+      { stage: 2, delay: 1200 },
+      { stage: 3, delay: 2400 },
+      { stage: 0, delay: 4000 } // 0 represents completion
+    ];
     
-    const introCompletionTimer = setTimeout(() => {
-      setShowIntroAnimation(false);
-    }, 4500);
+    const timers: NodeJS.Timeout[] = [];
+    
+    introSequence.forEach(step => {
+      const timer = setTimeout(() => {
+        if (step.stage === 0) {
+          setShowIntroAnimation(false);
+        } else {
+          setIntroStage(step.stage);
+        }
+      }, step.delay);
+      
+      timers.push(timer);
+    });
+    
+    // Skip button handler
+    const handleKeyPress = (e: { key: string; }) => {
+      if (e.key === 'Escape') {
+        setShowIntroAnimation(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
     
     return () => {
-      clearTimeout(introStage1Timer);
-      clearTimeout(introStage2Timer);
-      clearTimeout(introCompletionTimer);
+      timers.forEach(timer => clearTimeout(timer));
+      window.removeEventListener('keydown', handleKeyPress);
     };
-  }, []);
+  }, [isMounted, showIntroAnimation]);
 
-  // Navigate to main content
+  // Navigate to main content with smooth transition
   const navigateToMain = () => {
-    router.push('/main');
+    // Create a page transition effect
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('page-transition');
+    }
+    
+    setTimeout(() => {
+      router.push('/main');
+    }, 800);
   };
   
-  // Smooth scroll to section
-  const scrollToSection = (index: number): void => {
+  // Enhanced smooth scroll to section with improved animation - SSR compatible
+  const scrollToSection = (index: React.SetStateAction<number>) => {
+    if (!mainRef.current) return;
+    
+    // Set current section immediately for UI response
+    setCurrentSection(index);
+    
+    // Get the section element
     const sectionElement = document.getElementById(`section-${index}`);
+    
     if (sectionElement) {
+      // Use the element's position for scrolling
       sectionElement.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
     }
   };
-
-  // Section component
-  interface Section {
-    id: string;
-    title: string;
-    background: string;
-    subtitle: string;
-    description: string;
-  }
-
-  const SectionComponent = ({ section, index }: { section: Section; index: number }) => {
-    const [titleRef, titleInView] = useInView({ 
-      threshold: 0.5,
-      triggerOnce: true // Ensures the animation happens once
-    });
+  
+  // Handle scroll to update active section with SSR compatibility
+  useEffect(() => {
+    if (!isMounted || !mainRef.current || showIntroAnimation) return;
     
-    const [imageRef, imageInView] = useInView({ 
-      threshold: 0.2,
-      triggerOnce: true // This ensures the animation happens once and images stay visible
-    });
+    const handleScroll = () => {
+      if (!mainRef.current) return;
+      
+      const scrollPosition = mainRef.current.scrollTop;
+      const viewportHeight = mainRef.current.clientHeight || 800;
+      
+      let newSection = 0;
+      sections.forEach((_, index) => {
+        const sectionElement = document.getElementById(`section-${index}`);
+        if (!sectionElement) return;
+        
+        const sectionTop = sectionElement.offsetTop;
+        const sectionHeight = sectionElement.offsetHeight;
+        
+        // Section is in view if its position is within the viewport
+        if (
+          scrollPosition >= sectionTop - viewportHeight * 0.5 &&
+          scrollPosition < sectionTop + sectionHeight - viewportHeight * 0.5
+        ) {
+          newSection = index;
+        }
+      });
+      
+      if (newSection !== currentSection) {
+        setCurrentSection(newSection);
+      }
+    };
     
-    const [textRef, textInView] = useInView({ 
-      threshold: 0.5,
-      triggerOnce: true // Ensures the animation happens once
-    });
+    // Add scroll event listener with throttling
+    let ticking = false;
+    const scrollListener = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    
+    mainRef.current.addEventListener('scroll', scrollListener);
+    
+    // Initial check
+    handleScroll();
+    
+    return () => {
+      if (mainRef.current) {
+        mainRef.current.removeEventListener('scroll', scrollListener);
+      }
+    };
+  }, [isMounted, currentSection, sections.length, showIntroAnimation]);
+  
+  // Enhanced Section component with simplified animations
+  const SectionComponent = ({ section, index }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    const sectionRef = useRef(null);
     
     useEffect(() => {
-      if (titleInView) {
-        setCurrentSection(index);
-      }
-    }, [titleInView, index]);
+      if (!sectionRef.current || !isMounted) return;
+      
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          setIsVisible(entry.isIntersecting);
+        },
+        {
+          threshold: 0.2,
+        }
+      );
+      
+      observer.observe(sectionRef.current);
+      
+      return () => {
+        if (sectionRef.current) {
+          observer.unobserve(sectionRef.current);
+        }
+      };
+    }, [isMounted]);
     
     return (
       <section 
+        ref={sectionRef}
         id={`section-${index}`}
-        className="min-h-screen w-full snap-start flex flex-col items-center relative"
-        style={{ paddingTop: '2rem', paddingBottom: '4rem' }}
+        className="min-h-screen w-full flex flex-col items-center justify-center relative snap-center"
       >
-        {/* Background overlay */}
-        <div className="absolute inset-0 bg-black/50 z-0"></div>
-        
-        {/* Title animation */}
-        <motion.div 
-          ref={titleRef}
-          className="w-full flex flex-col items-center justify-center pt-32 md:pt-40 pb-16 z-20"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: titleInView ? 1 : 0 }}
-          transition={{ duration: 1.2 }} // Slowed down a bit
-        >
-          {index === 0 ? (
-            <h1 className="text-7xl md:text-8xl font-bold tracking-tight inline-block mb-4">
-              <span style={{ color: '#ff0000' }}>ANIME</span>
-              <span className="text-white">VERSE</span>
-            </h1>
-          ) : (
-            <h2 className="text-6xl md:text-7xl font-bold tracking-tight inline-block mb-4">
-              <span style={{ color: '#ff0000' }}>{section.title}</span>
-            </h2>
-          )}
-          
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ 
-              opacity: titleInView ? 1 : 0, 
-              y: titleInView ? 0 : 10
-            }}
-            transition={{ duration: 1.2, delay: 0.3 }} // Slowed down
-            className="text-white/90 text-xl mt-8 max-w-2xl text-center px-6"
-          >
-            {section.description}
-          </motion.p>
-        </motion.div>
-        
-        {/* FIXED IMAGE ANIMATION - Ensures images are always visible */}
-        <motion.div 
-          ref={imageRef}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 2.5, ease: "easeInOut" }}
-          className="w-full relative z-10 bg-black my-12"
-        >
-          <div className="cinema-container">
-            {/* Div with background image and enhanced shadow */}
-            <div 
-              className="w-full h-full bg-cover bg-center"
-              style={{ 
-                backgroundImage: `url(${section.background})`,
-                backgroundColor: '#111', // Fallback color if image doesn't load
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)' // Enhanced shadow
-              }}
-            ></div>
-          </div>
-        </motion.div>
-        
-        {/* Subtitle animation */}
-        <motion.div
-          ref={textRef}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ 
-            opacity: textInView ? 1 : 0, 
-            y: textInView ? 0 : 20 
+        {/* Static background with overlay */}
+        <div 
+          className="absolute inset-0 w-full h-full z-0 bg-cover bg-center"
+          style={{ 
+            backgroundImage: `url(${section.background})`
           }}
-          transition={{ duration: 1.2, delay: 0.8 }} // Slowed down and delayed more
-          className="w-full flex flex-col items-center justify-center py-16 z-20 px-6"
         >
-          <h3 className="text-3xl md:text-4xl font-light tracking-wide text-white/90 text-center mb-8">
-            {section.subtitle}
-          </h3>
-          
-          {/* Call to action - Only on the last section */}
-          {index === sections.length - 1 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: textInView ? 1 : 0 }}
-              transition={{ duration: 1.5, delay: 1.2 }} // Slowed down
-              className="mt-16"
-            >
-              <motion.button
-                whileHover={{ 
-                  scale: 1.05, 
-                  backgroundColor: '#ff0000',
-                  boxShadow: '0 0 30px rgba(255,0,0,0.5)' // Enhanced glow effect
+          <div 
+            className="absolute inset-0 z-10 bg-gradient-to-b from-black/80 via-black/60 to-black/80"
+          />
+        </div>
+        
+        {/* Background particles for the hero section */}
+        {index === 0 && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {Array.from({ length: 30 }).map((_, i) => (
+              <div 
+                key={i}
+                className="absolute rounded-full bg-white/20 animate-float"
+                style={{
+                  width: `${Math.floor(Math.random() * 5) + 2}px`,
+                  height: `${Math.floor(Math.random() * 5) + 2}px`,
+                  left: `${Math.floor(Math.random() * 100)}%`,
+                  top: `${Math.floor(Math.random() * 100)}%`,
+                  animationDuration: `${Math.floor(Math.random() * 20) + 10}s`,
+                  animationDelay: `${Math.floor(Math.random() * 5)}s`
                 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={navigateToMain}
-                className="px-12 py-4 bg-red-600 text-white rounded-md text-lg font-medium tracking-wide transition-all duration-500"
-                style={{ backgroundColor: '#ff0000' }}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* Floating icons for discover section */}
+        {index === 1 && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {['📜', '📖', '✍️', '🔍'].map((icon, i) => (
+              <div 
+                key={i}
+                className="absolute text-2xl md:text-4xl animate-float-icons"
+                style={{
+                  left: `${10 + (i * 20) % 80}%`,
+                  top: `${10 + (i * 23) % 80}%`,
+                  animationDelay: `${i * 0.3}s`
+                }}
               >
-                Enter AnimeVerse
-              </motion.button>
-            </motion.div>
-          )}
+                {icon}
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Connection bubbles for the connect section */}
+        {index === 3 && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div 
+                key={i}
+                className="absolute rounded-full border border-white/30 animate-pulse-slow"
+                style={{
+                  width: `${Math.floor(Math.random() * 60) + 40}px`,
+                  height: `${Math.floor(Math.random() * 60) + 40}px`,
+                  left: `${Math.floor(Math.random() * 100)}%`,
+                  top: `${Math.floor(Math.random() * 100)}%`,
+                  opacity: Math.random() * 0.2 + 0.1,
+                  animationDuration: `${Math.floor(Math.random() * 10) + 10}s`,
+                  animationDelay: `${Math.floor(Math.random() * 5)}s`
+                }}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* Main content with animation */}
+        <motion.div 
+          className="relative z-20 w-full max-w-7xl mx-auto px-6 lg:px-8 py-16 md:py-24 flex flex-col justify-center items-center"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ 
+            opacity: isVisible ? 1 : 0,
+            y: isVisible ? 0 : 50
+          }}
+          transition={{ duration: 0.8 }}
+        >
+          {/* Title with animation */}
+          <div className="mb-16 relative text-center">
+            {/* Accent line */}
+            <motion.div 
+              className="h-0.5 w-24 mx-auto bg-gradient-to-r from-red-500 to-red-600 mb-8"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: isVisible ? 1 : 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+            />
+            
+            {index === 0 ? (
+              <h1 className="text-7xl md:text-9xl font-extrabold tracking-tighter leading-none mb-6">
+                <motion.span 
+                  className="block text-transparent bg-clip-text bg-gradient-to-br from-red-500 to-red-600"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ 
+                    opacity: isVisible ? 1 : 0,
+                    y: isVisible ? 0 : 30
+                  }}
+                  transition={{ duration: 0.7, delay: 0.3 }}
+                >
+                  ANIME
+                </motion.span>
+                <motion.span 
+                  className="block text-white"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ 
+                    opacity: isVisible ? 1 : 0,
+                    y: isVisible ? 0 : 30
+                  }}
+                  transition={{ duration: 0.7, delay: 0.5 }}
+                >
+                  VERSE
+                </motion.span>
+              </h1>
+            ) : (
+              <motion.h2 
+                className="text-6xl md:text-8xl font-bold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-br from-red-500 via-red-600 to-red-500"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ 
+                  opacity: isVisible ? 1 : 0,
+                  y: isVisible ? 0 : 30
+                }}
+                transition={{ duration: 0.7, delay: 0.3 }}
+              >
+                {section.title}
+              </motion.h2>
+            )}
+            
+            {/* Description */}
+            <motion.p
+              className="text-white/90 text-xl md:text-2xl max-w-2xl mx-auto mt-8 leading-relaxed font-light"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ 
+                opacity: isVisible ? 1 : 0,
+                y: isVisible ? 0 : 20
+              }}
+              transition={{ duration: 0.7, delay: 0.7 }}
+            >
+              {section.description}
+            </motion.p>
+            
+            {/* Featured text for hero section */}
+            {index === 0 && section.featuredText && (
+              <motion.div
+                className="mt-12 md:mt-16 overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: isVisible ? 1 : 0 }}
+                transition={{ duration: 1, delay: 0.9 }}
+              >
+                <p className="tracking-widest text-white/60 text-sm font-light">
+                  {section.featuredText}
+                </p>
+              </motion.div>
+            )}
+          </div>
+          
+          {/* Section-specific content */}
+          <div className="w-full mt-8 md:mt-12">
+            {/* Stats for hero section */}
+            {index === 0 && section.stats && (
+              <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto mt-10">
+                {section.stats.map((stat: { icon: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; value: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; label: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }, i: React.Key | null | undefined) => (
+                  <motion.div 
+                    key={i} 
+                    className="text-center"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ 
+                      opacity: isVisible ? 1 : 0,
+                      y: isVisible ? 0 : 30
+                    }}
+                    transition={{ 
+                      duration: 0.7, 
+                      delay: 0.3 + i * 0.1
+                    }}
+                  >
+                    <div className="relative mb-2 flex justify-center">
+                      <div className="absolute inset-0 bg-red-500/20 blur-xl rounded-full"></div>
+                      <div className="relative flex flex-col items-center">
+                        <span className="text-4xl mb-2">{stat.icon}</span>
+                        <p className="text-4xl md:text-5xl font-bold text-white">{stat.value}</p>
+                      </div>
+                    </div>
+                    <p className="text-white/60 text-sm uppercase tracking-wider">{stat.label}</p>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            
+            {/* Features for discover section */}
+            {index === 1 && section.features && (
+              <div className="mt-16 grid gap-6 max-w-3xl mx-auto">
+                {section.features.map((feature: { icon: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; text: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }, i: React.Key | null | undefined) => (
+                  <motion.div
+                    key={i}
+                    className="flex items-center backdrop-blur-sm bg-black/20 rounded-xl p-5 border border-white/10 hover:border-red-500/30 transition-all duration-500"
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={{ 
+                      opacity: isVisible ? 1 : 0,
+                      x: isVisible ? 0 : -50
+                    }}
+                    transition={{ 
+                      duration: 0.7, 
+                      delay: 0.1 + i * 0.15
+                    }}
+                    whileHover={{ scale: 1.03 }}
+                  >
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center mr-5 text-2xl">
+                      {feature.icon}
+                    </div>
+                    <p className="text-white font-medium text-lg">{feature.text}</p>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            
+            {/* Tools for create section */}
+            {index === 2 && section.tools && (
+              <div className="mt-16 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                {section.tools.map((tool: { name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; description: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }, i: React.Key | null | undefined) => (
+                  <motion.div
+                    key={i}
+                    className="backdrop-blur-sm bg-black/20 rounded-xl p-6 border border-white/10 hover:border-red-500/30 transition-all duration-500 flex flex-col relative overflow-hidden group"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ 
+                      opacity: isVisible ? 1 : 0,
+                      y: isVisible ? 0 : 30
+                    }}
+                    transition={{ 
+                      duration: 0.7, 
+                      delay: 0.2 + i * 0.1
+                    }}
+                    whileHover={{ y: -5 }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-red-600/20 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                    <h3 className="text-xl font-medium text-white mb-3 relative">{tool.name}</h3>
+                    <p className="text-white/70 flex-1 relative">{tool.description}</p>
+                    <div className="mt-4 w-8 h-0.5 bg-red-500 group-hover:w-full transition-all duration-500"></div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            
+            {/* Testimonials for connect section */}
+            {index === 3 && section.testimonials && (
+              <div className="mt-16 grid gap-8 max-w-3xl mx-auto">
+                {section.testimonials.map((testimonial: { quote: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; author: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }, i: React.Key | null | undefined) => (
+                  <motion.div
+                    key={i}
+                    className="backdrop-blur-sm bg-black/20 rounded-xl p-8 border border-white/10 relative"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ 
+                      opacity: isVisible ? 1 : 0,
+                      scale: isVisible ? 1 : 0.9
+                    }}
+                    transition={{ 
+                      duration: 0.7, 
+                      delay: 0.3 + i * 0.2
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="absolute -top-5 -left-3 text-6xl text-red-500/60">"</div>
+                    <p className="text-white/90 text-lg font-light italic mb-4 relative">{testimonial.quote}</p>
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 mr-3"></div>
+                      <p className="text-white/70 text-sm">{testimonial.author}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            
+            {/* Call to action */}
+            <div className="mt-20 md:mt-28 text-center">
+              {index === sections.length - 1 ? (
+                <motion.div 
+                  className="flex flex-col items-center"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ 
+                    opacity: isVisible ? 1 : 0,
+                    y: isVisible ? 0 : 30
+                  }}
+                  transition={{ duration: 0.8, delay: 0.9 }}
+                >
+                  <motion.button
+                    onClick={navigateToMain}
+                    className="px-12 py-5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg text-lg font-medium tracking-wide transition-all duration-500 relative overflow-hidden group"
+                    whileHover={{ 
+                      scale: 1.05,
+                      boxShadow: '0 0 40px rgba(239,68,68,0.4)'
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-15 transition-opacity duration-700"></span>
+                    <span className="relative z-10">Enter AnimeVerse</span>
+                  </motion.button>
+                  
+                  <p className="text-white/50 text-sm mt-6">Join 2M+ writers and readers today</p>
+                </motion.div>
+              ) : (
+                <motion.button
+                  onClick={() => scrollToSection(index + 1)}
+                  className="group flex items-center space-x-2 mx-auto"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ 
+                    opacity: isVisible ? 1 : 0,
+                    y: isVisible ? 0 : 30
+                  }}
+                  transition={{ duration: 0.8, delay: 0.9 }}
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <span className="text-white group-hover:text-red-400 transition-colors text-lg mr-2">
+                    Explore {sections[index + 1].title.toLowerCase()}
+                  </span>
+                  <div 
+                    className="w-10 h-10 rounded-full border border-white/30 group-hover:border-red-400 flex items-center justify-center transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-white group-hover:text-red-400 transition-colors animate-bounce-gentle"
+                    >
+                      <path d="M12 5v14"></path>
+                      <path d="M19 12l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                </motion.button>
+              )}
+            </div>
+          </div>
         </motion.div>
       </section>
     );
   };
 
+  // Don't render anything until client-side hydration completes
+  if (!isMounted) {
+    return (
+      <div className="w-screen h-screen bg-black flex items-center justify-center">
+        <div className="text-white text-lg">Loading experience...</div>
+      </div>
+    );
+  }
+
   return (
-    <div ref={containerRef} className="relative bg-black text-white">
-      {/* Studio intro animation */}
+    <div className="relative bg-black text-white">
+      {/* Studio intro animation with advanced effects */}
       <AnimatePresence>
         {showIntroAnimation && (
           <motion.div 
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1.5 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden"
           >
+            {/* Dynamic background grid */}
+            <div className="absolute inset-0 grid-bg"></div>
+            
             {/* Logo animation - First stage */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ 
-                opacity: introStage >= 1 ? 1 : 0,
-              }}
-              exit={{ opacity: 0 }}
+              animate={{ opacity: introStage >= 1 ? 1 : 0 }}
               className="text-center absolute"
             >
               <svg width="180" height="180" viewBox="0 0 150 150" className="mx-auto">
@@ -248,7 +610,7 @@ export default function CinematicAnimeLanding() {
                   strokeWidth="2"
                   initial={{ pathLength: 0 }}
                   animate={{ pathLength: introStage >= 1 ? 1 : 0 }}
-                  transition={{ duration: 2.2, ease: "easeInOut" }}
+                  transition={{ duration: 2, ease: "easeInOut" }}
                 />
                 <motion.path 
                   d="M50,50 L100,100 M100,50 L50,100" 
@@ -257,129 +619,202 @@ export default function CinematicAnimeLanding() {
                   fill="none"
                   initial={{ pathLength: 0 }}
                   animate={{ pathLength: introStage >= 1 ? 1 : 0 }}
-                  transition={{ duration: 1.8, delay: 0.5, ease: "easeInOut" }}
+                  transition={{ duration: 1.5, delay: 0.5, ease: "easeInOut" }}
                 />
               </svg>
             </motion.div>
             
-            {/* Brand name animation - Uniqlo style with red and white */}
+            {/* Premium brand name animation */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ 
-                opacity: introStage >= 2 ? 1 : 0,
-              }}
-              transition={{ duration: 1 }}
+              animate={{ opacity: introStage >= 2 ? 1 : 0 }}
               className="absolute text-center"
             >
-              <motion.div className="text-8xl font-bold tracking-tight mt-10">
-                {introStage >= 2 && "ANIME".split('').map((letter, i) => (
-                  <motion.span
-                    key={i}
+              <div className="text-8xl font-extrabold tracking-tighter">
+                {introStage >= 2 && (
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.6,
-                      delay: 0.08 * i,
-                      ease: [0.215, 0.61, 0.355, 1]
-                    }}
-                    className="inline-block mx-2"
-                    style={{ color: '#ff0000' }}
+                    transition={{ duration: 0.8 }}
+                    className="block mb-2 text-transparent bg-clip-text bg-gradient-to-br from-red-500 to-red-600"
                   >
-                    {letter}
-                  </motion.span>
-                ))}
-                {introStage >= 2 && "VERSE".split('').map((letter, i) => (
-                  <motion.span
-                    key={i}
+                    ANIME
+                  </motion.div>
+                )}
+                {introStage >= 2 && (
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.6,
-                      delay: 0.08 * (i + 5), // Start after "ANIME"
-                      ease: [0.215, 0.61, 0.355, 1]
-                    }}
-                    className="inline-block mx-2 text-white"
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                    className="block text-white"
                   >
-                    {letter}
-                  </motion.span>
-                ))}
-              </motion.div>
+                    VERSE
+                  </motion.div>
+                )}
+              </div>
+              
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ 
-                  opacity: introStage >= 3 ? 1 : 0,
-                  y: introStage >= 3 ? 0 : 10
+                  opacity: introStage >= 2 ? 1 : 0,
+                  y: introStage >= 2 ? 0 : 10
                 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
+                transition={{ duration: 0.8, delay: 0.8 }}
                 className="text-base tracking-widest font-light mt-8 text-white/80"
               >
-                STUDIOS
+                IMMERSIVE STORYTELLING
               </motion.div>
             </motion.div>
+            
+            {/* Skip intro button with premium styling */}
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: introStage >= 2 ? 1 : 0 }}
+              transition={{ delay: 1, duration: 0.5 }}
+              onClick={() => setShowIntroAnimation(false)}
+              className="fixed bottom-10 right-10 text-white/70 hover:text-white text-sm z-50 uppercase tracking-widest px-6 py-3 border border-white/20 rounded-lg hover:border-red-500/50 transition-all backdrop-blur-sm overflow-hidden group"
+            >
+              <span className="relative z-10">Skip Intro</span>
+              <div 
+                className="absolute inset-0 bg-red-500/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-400"
+              />
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
       
-      {/* Main content with cinematic scrolling */}
-      <div className="h-screen overflow-y-auto overflow-x-hidden hide-scrollbar snap-y snap-mandatory scroll-smooth">
+      {/* Main content container with snap scrolling for premium feel */}
+      <div 
+        ref={mainRef}
+        className="h-screen overflow-y-auto overflow-x-hidden hide-scrollbar snap-y snap-mandatory"
+        style={{
+          WebkitOverflowScrolling: 'touch', // Better iOS scrolling
+          scrollSnapType: 'y mandatory'
+        }}
+      >
+        {/* Generate sections */}
         {sections.map((section, index) => (
           <SectionComponent 
-            key={`section-${index}`} 
+            key={index}
             section={section} 
-            index={index} 
+            index={index}
           />
         ))}
       </div>
       
-      {/* Side navigation dots - Increased size and spacing */}
-      <motion.div 
-        className="fixed right-8 top-1/2 transform -translate-y-1/2 z-40 flex flex-col space-y-6"
-        initial={{ opacity: 0, x: 10 }}
-        animate={{ 
-          opacity: !showIntroAnimation ? 1 : 0,
-          x: !showIntroAnimation ? 0 : 10 
-        }}
-        transition={{ duration: 0.8, delay: 0.5 }}
+      {/* Animated side navigation dots */}
+      <div 
+        className={`fixed right-8 top-1/2 transform -translate-y-1/2 z-40 flex flex-col space-y-6 transition-opacity duration-500 ${
+          showIntroAnimation ? 'opacity-0' : 'opacity-100'
+        }`}
       >
         {sections.map((_, index) => (
-          <motion.button
+          <button
             key={index}
             onClick={() => scrollToSection(index)}
-            initial={false}
-            animate={{ 
-              scale: currentSection === index ? 1.5 : 1,
-              backgroundColor: currentSection === index ? '#ff0000' : 'rgba(255,255,255,0.3)'
-            }}
-            whileHover={{ scale: 1.8, backgroundColor: currentSection === index ? '#ff0000' : 'rgba(255,255,255,0.7)' }}
-            className="w-3 h-3 rounded-full transition-all duration-300 relative group"
+            className="relative group"
+          >
+            <div className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              currentSection === index 
+                ? 'bg-gradient-to-r from-red-500to-red-600' 
+                : 'bg-white/30 group-hover:bg-white/50'
+            }`}
             style={{
-              boxShadow: currentSection === index ? '0 0 12px rgba(255,0,0,0.7)' : 'none' // Enhanced glow
+              boxShadow: currentSection === index ? '0 0 12px rgba(239,68,68,0.6)' : 'none'
             }}
-          >
-            <span className="absolute right-full mr-6 py-2 px-3 bg-black/90 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+            />
+            <div className="absolute left-0 transform -translate-x-full px-4 py-1 rounded bg-black/80 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap text-sm -ml-2">
               {sections[index].title}
-            </span>
-          </motion.button>
+            </div>
+          </button>
         ))}
-      </motion.div>
+      </div>
       
-      {/* Skip intro button - Only visible during intro */}
-      <AnimatePresence>
-        {showIntroAnimation && (
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ delay: 2, duration: 0.5 }}
-            onClick={() => setShowIntroAnimation(false)}
-            className="fixed bottom-10 right-10 text-white/70 hover:text-white text-sm z-50 uppercase tracking-widest px-4 py-2 border border-white/20 rounded-md hover:border-white/50 transition-all"
-          >
-            Skip Intro
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {/* Animated progress indicator */}
+      <div
+        className={`fixed top-0 left-0 h-1 z-40 transition-all duration-500 ${
+          showIntroAnimation ? 'opacity-0' : 'opacity-100'
+        }`}
+        style={{ 
+          width: !showIntroAnimation ? `${(currentSection + 1) / sections.length * 100}%` : '0%',
+          background: 'linear-gradient(90deg, #ef4444, #dc2626)'
+        }}
+      />
       
+      {/* Header with logo and nav */}
+      <header
+        className={`fixed top-0 left-0 right-0 p-6 z-40 flex justify-between items-center transition-opacity duration-500 ${
+          showIntroAnimation ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex items-center">
+          <div className="text-2xl font-bold tracking-tight">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-600">ANIME</span>
+            <span className="text-white ml-1">VERSE</span>
+          </div>
+        </div>
+        
+        {/* Nav links - Desktop only */}
+        <div className="hidden md:flex space-x-8">
+          {sections.map((section, index) => (
+            <button
+              key={index}
+              onClick={() => scrollToSection(index)}
+              className={`text-sm tracking-wide uppercase relative ${
+                currentSection === index ? 'text-white' : 'text-white/50 hover:text-white/80'
+              }`}
+            >
+              {section.title}
+              <div 
+                className={`absolute bottom-0 left-0 right-0 h-0.5 bg-red-500 transform origin-left transition-transform duration-300 ${
+                  currentSection === index ? 'scale-x-100' : 'scale-x-0'
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+        
+        {/* Login button */}
+        <button className="px-5 py-2 rounded text-white text-sm relative overflow-hidden group">
+          <span className="relative z-10">Login</span>
+          <div className="absolute inset-0 border border-white/20 rounded group-hover:border-red-500/50 transition-colors duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        </button>
+      </header>
+      
+      {/* Mobile menu */}
+      <div
+        className={`md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 transition-all duration-500 ${
+          showIntroAnimation ? 'opacity-0 translate-y-10' : 'opacity-100 translate-y-0'
+        }`}
+      >
+        <div className="flex space-x-2 bg-black/80 backdrop-blur-md px-4 py-3 rounded-full border border-white/10">
+          {sections.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => scrollToSection(index)}
+              className="w-2.5 h-2.5 rounded-full relative"
+            >
+              <div 
+                className={`w-full h-full rounded-full transition-all duration-300 ${
+                  currentSection === index ? 'bg-red-500 scale-125' : 'bg-white/30'
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Global styles */}
       <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        
+        /* Base styles */
+        html {
+          scroll-behavior: smooth;
+        }
+        
         body {
           margin: 0;
           padding: 0;
@@ -390,44 +825,93 @@ export default function CinematicAnimeLanding() {
         
         /* Hide scrollbar but allow scrolling */
         .hide-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
         
         .hide-scrollbar::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, Opera */
+          display: none;
         }
         
-        /* Cinema container - full width image - Increased height */
-        .cinema-container {
-          width: 100%;
-          height: 65vh; /* Increased height for more dramatic effect */
-          position: relative;
-          overflow: hidden;
-          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        /* Page transition effect */
+        .page-transition {
+          animation: fadeOut 0.8s ease forwards;
         }
         
-        /* Smooth transitions */
-        * {
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-          text-rendering: optimizeLegibility;
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
         }
         
-        /* Add subtle grain texture to the background */
-        .grain::before {
-          content: '';
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c8TV1mAAAAG3RSTlNAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEAvEOwtAAAFVklEQVR4XpWWB67c2BUFb3g557T/hRo9/WUMZHlgr4Bg8Z4qQgQJlHI4A8SzFVrapvmTF9O7dmYRFZ60YiBhJRCgh1FYhiLAmdvX0CzTOpNE77ME0Zty/nWWzchDtiqrXp0h9jxg9+ZGARXPKRqgk/e2B+/TCuREakVoI4t0KckrHR0N+k6p/TwD8+6Y8r/8AxPNG9vjy7HEYlFjnDgqR0AtgIByWp2ukyk0xBnAxx2wHMIEyqZMo9IIIkUZEB5GmA5jIyMjAq6Fg2YBRJ5LOZmZQQx/1mw3uH1F3lm2FQW69vgFJ+QQfkH3D4j47DjGP+ReAp+AXVPKDaVYZlKXZPb7GAR7q5Qsq2KMlZ0CQfTLqAnaGdCwzJJF2iE0y5EvkL3K+w34nKaSfJXpxKYrqB41kw0GqZpDmBDZJ5WiHS7mwbfLu2Rfse6yjEAUqy1ut1P/eDox3hKOSzH7RwO+C9RJCSpKSlTLVeQWORZBTAXWYwB3DvK7RvlCWlKkUO2bSOWA6nYWFNoB9ZPiyMO3bXOtpMhEh4kaTk6KAqpS4kEkV5SUtIRYpES0Xmjhs9gEcmHABhJ2aIgYRXmG3WWL7gyYtj+weQJpXWlz/jz/LJlvfifKQ7pXXqxTYrp90LBP9bZGWbqRcuNvkSTdoG4oVJn8y1GPXJbZ7whRYM2xgFGhpNo9pHCpHnGCMwoGIJbl1lPQWAxh4SBm341/NfG9SFia/GCAU+H7Fg0pczOIPYQQI0oA0jZqFQoY8IzMggDB5zcIhQjKPAQQQ1EwHE3MmZmZrK+H3w1l4QYWAXRgmw/Y1PnMbBqGNIQQYQkhkGJCDmE+JpiNIe06dIJ6CgkGJg4lRiZmInOyc3J2cDDQwFBQEFRUTASFhYSFJcVlFZUVtXX1jQTCDIwMTEw88GwcHOzs3LwC+E1MTExMTHx8fHyC/AKioiKSkpJSUtKS0tLyCoqKSkpKyipqaurK6upamgQNLa1ELZ2kJF0dXbP0BqamZmbmZuYWFpZW1tY2NhYO9g6Ojg7OLs4uHl7e3j6+vn5+gYGBQcHBIaGhISHhEdGRkZGRUdExMbGxsbFxCYlJSclJyakZGRnpGZlZ2ZnZ2Tk5BTkFBQUlJSVFRSUlJWVVVVU11bUNDfWNjbX1TTX1LY1NTc0tLe2ddHYmJyZ3dHR1dnVFJUVHF2RGFxVXV1VHRxVVlJeXl1dVVVVUV1VUklRUxLJAKMQ1UPcJBcTFJ8okkWSSRbJIBskmOSSXFJJKSkgpqSRdZJBM0kC6yIDIJ/kkj4yQYpJHRkgBGSZFZJgMkkFSRcZIEekhw6SLDJJu0k+6SDfpIZ2kj3SSbtJBusgg6SWDpI/0k0HSQ/rJMBkiI2SE9JEBMkhGSRcZIr1kkIyRbhLxCSEhJIiEkFASTsJIBIkgkSSKRJMYEkviSTyJJQnEKcQoRCnEKcQoxChEKSQopCgkKaQoJCmkKZJJKkklGSSTZJMMkkcySQ7JI7kkl2SRApJP8kkhKSJFJJ/kkgJSQIpJMSkiRaSYlJIyUkpK/Yb6lPqE+pj6iPqQ+oj6mPqUmkyTaApNoak0mabQVJpG02kqTaPpNINm0kyaRTNpDs2huTSP5tNCWkALaBEtpCW0mJbSElpGy2k5raRVtJpW0WpaQ2tpHa2nDbSRNtEm2kJbaSttpR20nXbQbtpFe2gP7aX9tI8O0iE6TIfoCC3Q7+g/9Hv6Lf2eFlp/0Wf0O/0X/VKH9S/9Xf/TL3Rb/9Xf9DtdMBgAM0zWBYRDGjJzAAAAAElFTkSuQmCC');
-          pointer-events: none;
-          opacity: 0.03;
-          z-index: 9999;
+        /* Grid background for intro */
+        .grid-bg {
+          background-image: 
+            linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+          background-size: 40px 40px;
+          animation: gridMove 20s linear infinite;
+        }
+        
+        @keyframes gridMove {
+          0% { background-position: 0 0; }
+          100% { background-position: 40px 40px; }
+        }
+        
+        /* Floating animations */
+        @keyframes float {
+          0%, 100% { transform: translate(0, 0); }
+          25% { transform: translate(30px, 15px); }
+          50% { transform: translate(15px, 30px); }
+          75% { transform: translate(-15px, 15px); }
+        }
+        
+        .animate-float {
+          animation: float 15s infinite ease-in-out;
+        }
+        
+        @keyframes floatIcons {
+          0% { opacity: 0; transform: scale(0); }
+          10% { opacity: 0.7; transform: scale(1); }
+          90% { opacity: 0.7; transform: scale(1) translate(0, 0) rotate(0deg); }
+          30% { transform: translate(20px, -20px) rotate(10deg); }
+          60% { transform: translate(-20px, 20px) rotate(-10deg); }
+          100% { opacity: 0; transform: scale(0); }
+        }
+        
+        .animate-float-icons {
+          animation: floatIcons 15s infinite ease-in-out;
+        }
+        
+        @keyframes pulseSlow {
+          0% { transform: scale(1); opacity: 0.1; }
+          50% { transform: scale(1.1); opacity: 0.2; }
+          100% { transform: scale(1); opacity: 0.1; }
+        }
+        
+        .animate-pulse-slow {
+          animation: pulseSlow 5s infinite ease-in-out;
+        }
+        
+        /* Bounce animation for scroll arrows */
+        @keyframes bounceGentle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(5px); }
+        }
+        
+        .animate-bounce-gentle {
+          animation: bounceGentle 2s infinite ease-in-out;
+        }
+        
+        /* Reduce motion at user request */
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+          }
         }
       `}</style>
     </div>
